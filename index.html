@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <title>გულის ბოქლომი</title>
+    <style>
+        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Arial', sans-serif; }
+        
+        #lock-wrapper { position: relative; width: 300px; display: flex; flex-direction: column; align-items: center; z-index: 500; transition: 1s; }
+        #lock-shackle { 
+            width: 140px; height: 150px; border: 18px solid #ffb3c6; border-bottom: none; border-radius: 80px 80px 0 0; 
+            position: absolute; top: -60px; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: -1; 
+        }
+        #lock-container { 
+            text-align: center; background: #ff85a2; padding: 40px; border-radius: 40px; border: 10px solid #ffb3c6; 
+            box-shadow: 0 0 50px rgba(255,133,162,0.6);
+        }
+        .dial-group { display: flex; gap: 15px; justify-content: center; }
+        .dial { background: #222; padding: 15px; border-radius: 15px; color: #ff85a2; display: flex; flex-direction: column; align-items: center; }
+        .digit { font-size: 3.5rem; font-weight: bold; margin: 10px 0; user-select: none; min-width: 60px; }
+        button { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; }
+        .message { color: white; margin-top: 20px; font-weight: bold; font-size: 14px; }
+
+        .unlocked #lock-shackle { transform: translateY(-40px); }
+        .fade-out { opacity: 0; transform: scale(0.8); pointer-events: none; }
+
+        .user-photo { position: absolute; width: 180px; animation: photoEntry 1.5s ease-out forwards; opacity: 0; border: 6px solid white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); background: white; z-index: 200; }
+        @keyframes photoEntry { from { opacity: 0; transform: scale(0.3) rotate(-20deg); } to { opacity: 1; transform: scale(1) rotate(var(--rot)); } }
+        
+        canvas { position: absolute; top: 0; left: 0; display: none; z-index: 10; }
+        #final-text { position: absolute; z-index: 100; color: white; font-size: 70px; font-weight: bold; text-align: center; text-shadow: 0 0 20px #ff85a2; display: none; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div id="lock-wrapper">
+        <div id="lock-shackle"></div>
+        <div id="lock-container">
+            <div class="dial-group">
+                <div class="dial"><button onclick="changeDigit(0, 1)">▲</button><div id="digit-0" class="digit">0</div><button onclick="changeDigit(0, -1)">▼</button></div>
+                <div class="dial"><button onclick="changeDigit(1, 1)">▲</button><div id="digit-1" class="digit">0</div><button onclick="changeDigit(1, -1)">▼</button></div>
+                <div class="dial"><button onclick="changeDigit(2, 1)">▲</button><div id="digit-2" class="digit">0</div><button onclick="changeDigit(2, -1)">▼</button></div>
+            </div>
+            <div class="message">ჩაწერე ჩემი გულის კოდი🔑</div>
+        </div>
+    </div>
+
+    <div id="final-text">I LOVE YOU</div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        let currentCode = [0, 0, 0];
+        const targetCode = [2, 2, 2];
+
+        // გასწორებული ფოტოების ლინკები
+        const photoUrls = [
+            'https://i.ibb.co/93CpKmS3/foto-1.png', 
+            'https://i.ibb.co/CpB7pPXY/Foto-2.png',
+            'https://i.ibb.co/7tFTC1Ly/Foto-3.png',
+            'https://i.ibb.co/5X7bZvVn/Foto-4.png'
+        ];
+
+        function changeDigit(index, delta) {
+            currentCode[index] = (currentCode[index] + delta + 10) % 10;
+            document.getElementById(`digit-${index}`).innerText = currentCode[index];
+            if (currentCode.join('') === targetCode.join('')) unlock();
+        }
+
+        function unlock() {
+            const wrapper = document.getElementById('lock-wrapper');
+            wrapper.classList.add('unlocked');
+            setTimeout(() => {
+                wrapper.classList.add('fade-out');
+                setTimeout(() => {
+                    wrapper.style.display = 'none';
+                    startEverything();
+                }, 800);
+            }, 500);
+        }
+
+        function startEverything() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.style.display = 'block';
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            document.getElementById('final-text').style.display = 'block';
+
+            const particles = [];
+            const fallingItems = [];
+            const emojis = ['❤️', '🐧', '💖', '✨', '🐧'];
+
+            function getHeart(t) {
+                let x = 16 * Math.pow(Math.sin(t), 3);
+                let y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+                return { x: x * 20 + canvas.width/2, y: y * 20 + canvas.height/2 };
+            }
+
+            // გულის ნაწილაკები
+            for(let i=0; i<600; i++) {
+                let target = getHeart((i/600) * Math.PI * 2);
+                particles.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, tx: target.x, ty: target.y, color: "#ff85a2"});
+            }
+
+            // ჩამომცვივანი პინგვინები და გულები
+            for(let i=0; i<40; i++) {
+                fallingItems.push({
+                    x: Math.random()*canvas.width, y: Math.random()*-canvas.height, 
+                    s: Math.random()*2+2, size: Math.random()*20+20, 
+                    e: emojis[Math.floor(Math.random()*emojis.length)]
+                });
+            }
+
+            function frame() {
+                ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                ctx.fillRect(0,0,canvas.width, canvas.height);
+
+                particles.forEach(p => {
+                    p.x += (p.tx - p.x) * 0.05;
+                    p.y += (p.ty - p.y) * 0.05;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, 7); ctx.fill();
+                });
+
+                fallingItems.forEach(item => {
+                    item.y += item.s;
+                    if(item.y > canvas.height) item.y = -50;
+                    ctx.font = item.size + "px Arial";
+                    ctx.fillText(item.e, item.x, item.y);
+                });
+
+                requestAnimationFrame(frame);
+            }
+            frame();
+
+            const pos = [
+                { l: '10%', t: '10%' }, { l: '75%', t: '10%' },
+                { l: '10%', t: '70%' }, { l: '75%', t: '70%' }
+            ];
+
+            photoUrls.forEach((url, i) => {
+                setTimeout(() => {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.className = 'user-photo';
+                    img.style.left = pos[i].l;
+                    img.style.top = pos[i].t;
+                    img.style.setProperty('--rot', (Math.random()*40-20)+'deg');
+                    document.body.appendChild(img);
+                }, i * 1000 + 500);
+            });
+        }
+    </script>
+</body>
+</html>>
